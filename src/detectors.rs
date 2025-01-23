@@ -5,6 +5,7 @@ use regex::Regex;
 use axum::{http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tracing::info;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[cfg_attr(test, derive(PartialEq))]
@@ -92,9 +93,14 @@ fn regex_match(
     }
 }
 
+// pub async fn handle_text_contents(Json(payload): Json<DetectionRequest>) {
+//     info!("incoming payload: {:#?}", payload);
+// }
 pub async fn handle_text_contents(
     Json(payload): Json<DetectionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
+    println!("hi");
+    info!("incoming payload: {:?}", payload);
     if payload.detector_params.regex.is_empty() {
         return Err((StatusCode::BAD_REQUEST, format!("empty regex")));
     }
