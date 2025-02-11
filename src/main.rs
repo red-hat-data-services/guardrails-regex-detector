@@ -29,7 +29,7 @@ async fn main() {
     let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
 
     let app = Router::new()
-        .route("/health", get(|| async { "Hello, World!" }))
+        .route("/health", get(|| async { "healthy" }))
         .route("/api/v1/text/contents", post(handle_text_contents))
         .layer(
             TraceLayer::new_for_http()

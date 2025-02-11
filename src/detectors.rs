@@ -93,9 +93,6 @@ fn regex_match(
     }
 }
 
-// pub async fn handle_text_contents(Json(payload): Json<DetectionRequest>) {
-//     info!("incoming payload: {:#?}", payload);
-// }
 pub async fn handle_text_contents(
     Json(payload): Json<DetectionRequest>,
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
