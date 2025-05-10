@@ -2,15 +2,14 @@ apiVersion: tekton.dev/v1
 kind: PipelineRun
 metadata:
   annotations:
+    build.appstudio.openshift.io/build-nudge-files: config/overlays/rhoai/params.env
     build.appstudio.openshift.io/repo: https://github.com/red-hat-data-services/guardrails-regex-detector?rev={{revision}}
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    build.appstudio.openshift.io/build-nudge-files: "config/overlays/rhoai/params.env"
-    pipelinesascode.tekton.dev/on-cel-expression: |
-      event == "push" 
-      && target_branch == "rhoai-2.20"
-      && ( !".tekton/**".pathChanged() || ".tekton/fms-guardrails-regex-detector-v2-20-push.yaml".pathChanged() )
+    pipelinesascode.tekton.dev/on-cel-expression: "event == \"push\" \n&& target_branch
+      == \"rhoai-2.20\"\n&& ( !\".tekton/**\".pathChanged() || \".tekton/fms-guardrails-regex-detector-v2-20-push.yaml\".pathChanged()
+      )\n"
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: external-rhoai-v2-20
@@ -51,7 +50,7 @@ spec:
     - name: send-slack-notification
       params:
       - name: message
-        value: "$(tasks.rhoai-init.results.slack-message-failure-text)"
+        value: $(tasks.rhoai-init.results.slack-message-failure-text)
       - name: secret-name
         value: rhoai-konflux-secret
       - name: key-name
@@ -69,7 +68,7 @@ spec:
       - input: $(tasks.status)
         operator: in
         values:
-        - "Failed"  
+        - Failed
     params:
     - description: Source Repository URL
       name: git-url
@@ -144,29 +143,32 @@ spec:
     - name: rhoai-init
       params:
       - name: pipelinerun-name
-        value: "$(context.pipelineRun.name)"
+        value: $(context.pipelineRun.name)
       taskSpec:
+        metadata: {}
         results:
         - description: Notification text to be posted to slack
           name: slack-message-failure-text
+        spec: null
         steps:
-        - image: quay.io/rhoai-konflux/alpine:latest
-          name: rhoai-init
+        - computeResources: {}
           env:
           - name: slack_message
             valueFrom:
               secretKeyRef:
-                name: rhoai-konflux-secret
                 key: slack-component-failure-notification
+                name: rhoai-konflux-secret
+          image: quay.io/rhoai-konflux/alpine:latest
+          name: rhoai-init
           script: |
             pipelinerun_name=$(params.pipelinerun-name)
             echo "pipelinerun_name = $pipelinerun_name"
-            
+
             target_branch={{target_branch}}
             echo "target_branch = $target_branch"
             application_name=${target_branch/rhoai-/}
             echo "application-name = $application_name"
-            
+
             application_name=rhoai-v${application_name/./-}
             echo "application-name = $application_name"
             component_name=${pipelinerun_name/-on-*/}
@@ -186,6 +188,8 @@ spec:
         value: $(params.rebuild)
       - name: skip-checks
         value: $(params.skip-checks)
+      runAfter:
+      - rhoai-init
       taskRef:
         params:
         - name: name
@@ -195,8 +199,6 @@ spec:
         - name: kind
           value: task
         resolver: bundles
-      runAfter:
-      - rhoai-init
     - name: clone-repository
       params:
       - name: url
@@ -583,7 +585,7 @@ spec:
       - name: IMAGE
         value: $(tasks.build-image-index.results.IMAGE_URL)
       - name: ADDITIONAL_TAGS
-        value: 
+        value:
         - '{{target_branch}}-{{revision}}'
       runAfter:
       - build-image-index
@@ -646,10 +648,10 @@ spec:
       optional: true
     - name: netrc
       optional: true
-  taskRunTemplate: {}
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-fms-guardrails-regex-detector-v2-20
   workspaces:
   - name: git-auth
     secret:
       secretName: '{{ git_auth_secret }}'
 status: {}
-# restart
